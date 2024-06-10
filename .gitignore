@@ -1,0 +1,6 @@
+/.idea/
+/__pycharm__/
+/__pycache__/
+/other/
+testing.py
+debugging.py
