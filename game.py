@@ -17,15 +17,12 @@ class Game:
 
         self.G = GameState(self.Pw, self.Pb)
 
-        # self.Pw.startDisplay()
-        # self.Pb.startDisplay()
-
         self.timeRemaining = list(timeRemaining)
         self.timeAdded = list(timeAdded)
 
         self.running = True
 
-        self.currentPlayerSearchThread = None
+        self.moveGenerationThread = None
 
     def run(self):
         try:
@@ -39,37 +36,37 @@ class Game:
             exit()
 
     def stopAllThreads(self):
-        self.currentPlayerSearchThread.join()
+        self.moveGenerationThread.join()
 
     def update(self):
-        self.currentPlayerSearchThread = threading.Thread(target=self.currentPlayer.generateMove)
-        self.currentPlayer.bestMove = None
+        # Setup search
+        self.P.bestMove = None
+        self.moveGenerationThread = threading.Thread(target=self.P.generateMove)
         originalTimeRemaining = self.timeRemaining[self.G.turn.i]
 
+        # Starting move generation, while being timed
         startSearchTime = time.time()
-        self.currentPlayerSearchThread.start()
-        while self.currentPlayer.bestMove is None:
+        self.moveGenerationThread.start()
+
+        # Updating display and time remaining
+        while self.P.bestMove is None:
             self.Pw.updateDisplay()
             self.Pb.updateDisplay()
             self.timeRemaining[self.G.turn.i] = originalTimeRemaining - (time.time() - startSearchTime)
-        nextMove = self.currentPlayer.bestMove
+
+        nextMove = self.P.bestMove
         endSearchTime = time.time()
-        self.currentPlayerSearchThread.join()
+        self.moveGenerationThread.join()
 
-        self.timeRemaining[self.G.turn.i] = originalTimeRemaining - (endSearchTime - startSearchTime)
-        self.timeRemaining[self.G.turn.i] += self.timeAdded[self.G.turn.i]
+        self.timeRemaining[self.G.turn.i] = originalTimeRemaining - (endSearchTime - startSearchTime) + self.timeAdded[self.G.turn.i]
 
-        if nextMove is None:
-            pass
-        else:
-            nextMove.applyToGameState(self.G)
+        assert isinstance(nextMove, Move)
+        nextMove.applyToGameState(self.G)
 
     @property
-    def currentPlayer(self):
+    def P(self):
+        """Current player"""
         return self.Pw if self.G.turn == 'w' else self.Pb
-    @property
-    def currentOpponent(self):
-        return self.Pb if self.G.turn == 'w' else self.Pw
 
 
 class GameState:
@@ -86,8 +83,8 @@ class GameState:
 
         # Game History
         self.winInformation = None
-        self.moveList = []
         self.boardHistory = [self.board]
+        self.moveList = []
 
     @property
     def boardAsList(self):

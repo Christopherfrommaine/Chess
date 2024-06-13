@@ -66,11 +66,14 @@ class Human(Player):
         for event in newEvents:
             if event.type == pygame.QUIT:
                 self.game.running = False
+
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     self.game.running = False
                 if event.key == pygame.K_RETURN:
                     self.displaySettings.displaySide = -self.displaySettings.displaySide
+
+                # Change index for looking at game history with left or right arrow keys
                 if event.key == pygame.K_LEFT:
                     if self.displaySettings.displayMoveHistory is None:
                         self.displaySettings.displayMoveHistory = len(self.game.G.boardHistory) - 2
@@ -81,14 +84,15 @@ class Human(Player):
                         self.displaySettings.displayMoveHistory += 1
                         if self.displaySettings.displayMoveHistory >= len(self.game.G.boardHistory) - 1:
                             self.displaySettings.displayMoveHistory = None
+
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mpos = np.array(pygame.mouse.get_pos())
 
                 # Swap Display Sides
                 if ((self.displaySettings.swapIconPos - mpos + np.array((15, 15))) ** 2).sum() <= 625:
-                    self.s = -self.s
+                    self.displaySettings.displaySide = -self.displaySettings.displaySide
 
-                # Click the board
+                # Click the board to move peices
                 elif (self.displaySettings.borderSize <= mpos).all() and (mpos <= (self.displaySettings.windowSize - self.displaySettings.borderSize)).all():
                     mcoords = (mpos - self.displaySettings.borderSize) // self.displaySettings.tileSize
                     self.clickBoard(mcoords)
@@ -112,10 +116,6 @@ class Human(Player):
             else:
                 self.bestMove = moveFromTuple((self.selected, mi))
                 self.selected = None
-        print(self.selected)
 
     def generateMove(self):
-        pass
-
-
-
+        pass  # Not needed. Move generation is done through interacting with the board.

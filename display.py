@@ -12,6 +12,7 @@ except Exception:
 imageCache = {}
 
 class DisplaySettings:
+    """Object to hold all of the information about displaying the chess board. Fully customizable when initializing Player class."""
     def __init__(self, windowSize=(1280, 720), tileSize=60, timeTextSize=24, lightColor=(191, 131, 80), darkColor=(128, 78, 37), highlightColor=(200, 200, 0), clickedColor=(200, 100, 100), timeTextColor=(255, 255, 255), timeTextActiveBackgroundColor=(50, 50, 50), timeTextInactiveBackgroundColor=(100, 100, 100)):
         self.displaySurface = None
         self.displayMoveHistory = None
@@ -32,15 +33,15 @@ class DisplaySettings:
         self.timeTextInactiveBackgroundColor = timeTextInactiveBackgroundColor
 
     def sideColor(self, s):
+        """Returns the correct tile color for a specific side."""
         if Side('w') == s:
             return self.lightColor
         if Side('G') == s:
             return self.darkColor
 
-    def textBackgroundColor(self, player, op=None):
-        if op is None:
-            return self.timeTextActiveBackgroundColor if player.s != player.game.G.turn else self.timeTextInactiveBackgroundColor
-        return self.timeTextActiveBackgroundColor if player.s == player.game.G.turn else self.timeTextInactiveBackgroundColor
+    def textBackgroundColor(self, player, side):
+        """Returns either active or inactive background color."""
+        return self.timeTextActiveBackgroundColor if side != player.game.G.turn else self.timeTextInactiveBackgroundColor
 
 
 def draw(player):
@@ -74,20 +75,17 @@ def draw(player):
     font = pygame.font.Font(fontPath, S.timeTextSize)
     padding = S.timeTextSize // 3
 
-    # Display Player Time Text:
-    timeText = font.render(formatAsTime(player.game.timeRemaining[player.s.i]), True, S.timeTextColor)
-    rs = np.array(timeText.get_size())
-    textPos = np.array((S.borderSize[0] - rs[0] - 2 * padding, S.windowSize[1] - S.borderSize[1] - S.timeTextSize - padding))
-    backgroundRect = pygame.rect.Rect(*(textPos - padding), *(rs + 2 * padding))
-    pygame.draw.rect(window, S.textBackgroundColor(player), backgroundRect)
-    window.blit(timeText, textPos)
-
-    # Display Opponent Time Text:
-    timeText = font.render(formatAsTime(player.game.timeRemaining[1 - player.s.i]), True, S.timeTextColor)
-    textPos = (S.borderSize[0] - timeText.get_size()[0] - 2 * padding, S.borderSize[1] + S.timeTextSize - timeText.get_size()[1] + padding)
-    backgroundRect = pygame.rect.Rect(textPos[0] - padding, textPos[1] - padding, timeText.get_size()[0] + 2 * padding, timeText.get_size()[1] + 2 * padding)
-    pygame.draw.rect(window, S.textBackgroundColor(player, 'opponent'), backgroundRect)
-    window.blit(timeText, textPos)
+    # Display Time Text:
+    for side in (player.s, -player.s):
+        timeText = font.render(formatAsTime(player.game.timeRemaining[side.i]), True, S.timeTextColor)
+        rs = np.array(timeText.get_size())
+        if side == player.s:
+            textPos = np.array((S.borderSize[0] - rs[0] - 2 * padding, S.windowSize[1] - S.borderSize[1] - S.timeTextSize - padding))
+        else:
+            textPos = np.array((S.borderSize[0] - rs[0] - 2 * padding, S.borderSize[1] + S.timeTextSize - rs[1] + padding))
+        backgroundRect = pygame.rect.Rect(*(textPos - padding), *(rs + 2 * padding))
+        pygame.draw.rect(window, S.textBackgroundColor(player, side), backgroundRect)
+        window.blit(timeText, textPos)
 
     # Display Swap Icon
     window.blit(getImageData('Swap Sides'), S.swapIconPos)
