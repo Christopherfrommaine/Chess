@@ -1,3 +1,5 @@
+import threading
+
 from player import Player
 from side import Side
 from copy import copy
@@ -15,13 +17,15 @@ class Game:
 
         self.G = GameState(self.Pw, self.Pb)
 
-        self.Pw.startDisplay()
-        self.Pb.startDisplay()
+        # self.Pw.startDisplay()
+        # self.Pb.startDisplay()
 
         self.timeRemaining = list(timeRemaining)
         self.timeAdded = list(timeAdded)
 
         self.running = True
+
+        self.currentPlayerSearchThread = None
 
     def run(self):
         try:
@@ -35,20 +39,30 @@ class Game:
             exit()
 
     def stopAllThreads(self):
-        self.Pw.stopDisplay()
-        self.Pb.stopDisplay()
-        # self.Pw.stopSearch()  # If I need to put the search on a seperate thread. I'll try not to
-        # self.Pb.stopSearch()
+        self.currentPlayerSearchThread.join()
 
     def update(self):
-        startSearchTime = time.time()
-        nextMove = self.currentPlayer.generateMove()
-        endSearchTime = time.time()
+        self.currentPlayerSearchThread = threading.Thread(target=self.currentPlayer.generateMove)
+        self.currentPlayer.bestMove = None
+        originalTimeRemaining = self.timeRemaining[self.G.turn.i]
 
-        self.timeRemaining[self.G.turn.i] -= endSearchTime - startSearchTime
+        startSearchTime = time.time()
+        self.currentPlayerSearchThread.start()
+        while self.currentPlayer.bestMove is None:
+            self.Pw.updateDisplay()
+            self.Pb.updateDisplay()
+            self.timeRemaining[self.G.turn.i] = originalTimeRemaining - (time.time() - startSearchTime)
+        nextMove = self.currentPlayer.bestMove
+        endSearchTime = time.time()
+        self.currentPlayerSearchThread.join()
+
+        self.timeRemaining[self.G.turn.i] = originalTimeRemaining - (endSearchTime - startSearchTime)
         self.timeRemaining[self.G.turn.i] += self.timeAdded[self.G.turn.i]
 
-        nextMove.applyToGameState(self.G)
+        if nextMove is None:
+            pass
+        else:
+            nextMove.applyToGameState(self.G)
 
     @property
     def currentPlayer(self):

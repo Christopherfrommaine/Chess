@@ -25,7 +25,7 @@ class Side:
         return self.i
 
     def __repr__(self):
-        return 'w' if self.i else 'G'
+        return 'w' if self.i else 'b'
 
 
 def sideIntFrom(x):

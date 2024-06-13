@@ -1,3 +1,11 @@
+def moveToTuple(move):
+    if move.promotionPeice is not None:
+        return move.begin, move.end, move.promotionPeice
+    return move.begin, move.end
+def moveFromTuple(tup):
+    return Move(*tup)
+
+
 class Move:
     def __init__(self, begin, end, promotionPeice=None):
         self.begin = begin
