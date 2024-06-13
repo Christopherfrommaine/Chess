@@ -64,8 +64,23 @@ class Human(Player):
     def handlePygameEvents(self):
         newEvents = pygame.event.get()
         for event in newEvents:
-            if event.type == pygame.K_ESCAPE or event.type == pygame.QUIT:
+            if event.type == pygame.QUIT:
                 self.game.running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    self.game.running = False
+                if event.key == pygame.K_RETURN:
+                    self.displaySettings.displaySide = -self.displaySettings.displaySide
+                if event.key == pygame.K_LEFT:
+                    if self.displaySettings.displayMoveHistory is None:
+                        self.displaySettings.displayMoveHistory = len(self.game.G.boardHistory) - 2
+                    else:
+                        self.displaySettings.displayMoveHistory -= self.displaySettings.displayMoveHistory > 0
+                if event.key == pygame.K_RIGHT:
+                    if self.displaySettings.displayMoveHistory is not None:
+                        self.displaySettings.displayMoveHistory += 1
+                        if self.displaySettings.displayMoveHistory >= len(self.game.G.boardHistory) - 1:
+                            self.displaySettings.displayMoveHistory = None
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mpos = np.array(pygame.mouse.get_pos())
 

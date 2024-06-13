@@ -14,6 +14,7 @@ imageCache = {}
 class DisplaySettings:
     def __init__(self, windowSize=(1280, 720), tileSize=60, timeTextSize=24, lightColor=(191, 131, 80), darkColor=(128, 78, 37), highlightColor=(200, 200, 0), clickedColor=(200, 100, 100), timeTextColor=(255, 255, 255), timeTextActiveBackgroundColor=(50, 50, 50), timeTextInactiveBackgroundColor=(100, 100, 100)):
         self.displaySurface = None
+        self.displayMoveHistory = None
         self.displaySide = None
 
         self.windowSize = np.array(windowSize)
@@ -46,15 +47,12 @@ def draw(player):
     S = player.displaySettings
     window = S.displaySurface
     side = S.displaySide
-
-    # S.displaySide = Side('w')
+    b = player.game.G.board if S.displayMoveHistory is None else player.game.G.boardHistory[S.displayMoveHistory]
 
     window.fill(0)
 
     for i in range(64):
-        # time.sleep(1)
-        # pygame.display.flip()
-        coords = np.array((i % 8, i // 8))  # Tile coords on board
+        coords = np.array((i % 8, i // 8))  # Tile coordinates on board
         if side == 'b':
             coords = 7 - coords
 
@@ -65,12 +63,10 @@ def draw(player):
         if hasattr(player, 'selected'):
             if i == player.selected:
                 tileColor = 0.2 * np.array(tileColor) + 0.8 * np.array(S.clickedColor)
-        pygame.draw.rect(window,
-                         tileColor,
-                         pygame.Rect(*tilePos, S.tileSize, S.tileSize))
+        pygame.draw.rect(window, tileColor, pygame.Rect(*tilePos, S.tileSize, S.tileSize))
 
         # Draw Peice
-        if (peice := player.game.G.board[i]) != ' ':
+        if (peice := b[i]) != ' ':
             path = ('1' if peice.isupper() else '0') + str(peice).lower()
             window.blit(getImageData(path), tilePos)
 

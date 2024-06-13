@@ -87,7 +87,7 @@ class GameState:
         # Game History
         self.winInformation = None
         self.moveList = []
-        self.boardHistory = []
+        self.boardHistory = [self.board]
 
     @property
     def boardAsList(self):
