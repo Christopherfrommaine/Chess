@@ -1,8 +1,7 @@
-import time
-
 import pygame
 import numpy as np
 from side import Side
+from move import generateLegalMoves
 
 pygame.init()
 try:
@@ -18,6 +17,8 @@ class DisplaySettings:
         self.displayMoveHistory = None
         self.displaySide = None
 
+        self.highlightedTiles = []
+
         self.windowSize = np.array(windowSize)
         self.tileSize = tileSize
         self.timeTextSize = timeTextSize
@@ -32,11 +33,14 @@ class DisplaySettings:
         self.timeTextActiveBackgroundColor = timeTextActiveBackgroundColor
         self.timeTextInactiveBackgroundColor = timeTextInactiveBackgroundColor
 
+        self.font = pygame.font.Font(fontPath, self.timeTextSize)
+        self.padding = self.timeTextSize // 3
+
     def sideColor(self, s):
         """Returns the correct tile color for a specific side."""
         if Side('w') == s:
             return self.lightColor
-        if Side('G') == s:
+        if Side('b') == s:
             return self.darkColor
 
     def textBackgroundColor(self, player, side):
@@ -44,26 +48,28 @@ class DisplaySettings:
         return self.timeTextActiveBackgroundColor if side != player.game.G.turn else self.timeTextInactiveBackgroundColor
 
 
-def draw(player):
-    S = player.displaySettings
+def drawBoard(b, S, highlightCondition=lambda x: False, clickedCondition=lambda x: False, flip=True):
     window = S.displaySurface
-    side = S.displaySide
-    b = player.game.G.board if S.displayMoveHistory is None else player.game.G.boardHistory[S.displayMoveHistory]
-
     window.fill(0)
 
     for i in range(64):
         coords = np.array((i % 8, i // 8))  # Tile coordinates on board
-        if side == 'b':
+        if S.displaySide == 'b':
             coords = 7 - coords
 
         tilePos = (S.tileSize * coords) + S.borderSize  # Tile position on display
 
         # Draw Tile
-        tileColor = S.sideColor(1 - (coords.sum() % 2))
-        if hasattr(player, 'selected'):
-            if i == player.selected:
-                tileColor = 0.2 * np.array(tileColor) + 0.8 * np.array(S.clickedColor)
+        tileColor = [S.sideColor(1 - (coords.sum() % 2))]
+        if clickedCondition(i):
+            tileColor.append(S.highlightColor)  # Repeated to get a 2:1 weighted average
+            tileColor.append(S.highlightColor)
+        if highlightCondition(i):
+            tileColor.append(S.clickedColor)  # Repeated to get a 2:1 weighted average
+            tileColor.append(S.clickedColor)
+
+        tileColor = np.clip(((np.mean(np.array(tileColor) ** 2.2, axis=0)) ** (1 / 2.2)), 0, 255)  # Gamma-correcting color average
+
         pygame.draw.rect(window, tileColor, pygame.Rect(*tilePos, S.tileSize, S.tileSize))
 
         # Draw Peice
@@ -71,21 +77,41 @@ def draw(player):
             path = ('1' if peice.isupper() else '0') + str(peice).lower()
             window.blit(getImageData(path), tilePos)
 
-    # Get Time Text Font
-    font = pygame.font.Font(fontPath, S.timeTextSize)
-    padding = S.timeTextSize // 3
+    if flip:
+        pygame.display.flip()
 
-    # Display Time Text:
+
+def drawTimeText(player, flip=False):
+    S = player.displaySettings
+    window = S.displaySurface
+
     for side in (player.s, -player.s):
-        timeText = font.render(formatAsTime(player.game.timeRemaining[side.i]), True, S.timeTextColor)
+        timeText = S.font.render(formatAsTime(player.game.timeRemaining[side.i]), True, S.timeTextColor)
         rs = np.array(timeText.get_size())
         if side == player.s:
-            textPos = np.array((S.borderSize[0] - rs[0] - 2 * padding, S.windowSize[1] - S.borderSize[1] - S.timeTextSize - padding))
+            textPos = np.array((S.borderSize[0] - rs[0] - 2 * S.padding,
+                                S.windowSize[1] - S.borderSize[1] - S.timeTextSize - S.padding))
         else:
-            textPos = np.array((S.borderSize[0] - rs[0] - 2 * padding, S.borderSize[1] + S.timeTextSize - rs[1] + padding))
-        backgroundRect = pygame.rect.Rect(*(textPos - padding), *(rs + 2 * padding))
+            textPos = np.array(
+                (S.borderSize[0] - rs[0] - 2 * S.padding, S.borderSize[1] + S.timeTextSize - rs[1] + S.padding))
+        backgroundRect = pygame.rect.Rect(*(textPos - S.padding), *(rs + 2 * S.padding))
         pygame.draw.rect(window, S.textBackgroundColor(player, side), backgroundRect)
         window.blit(timeText, textPos)
+
+    if flip:
+        pygame.display.flip()
+
+
+def draw(player):
+    S = player.displaySettings
+    window = S.displaySurface
+    b = player.game.G.board if S.displayMoveHistory is None else player.game.G.boardHistory[S.displayMoveHistory]
+
+    # Display Board
+    drawBoard(b, S, lambda x: hasattr(player, 'selected') and x == player.selected, lambda x: x in S.highlightedTiles, False)
+
+    # Display Time Text
+    drawTimeText(player)
 
     # Display Swap Icon
     window.blit(getImageData('Swap Sides'), S.swapIconPos)
