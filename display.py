@@ -68,7 +68,8 @@ def drawBoard(b, S, highlightCondition=lambda x: False, clickedCondition=lambda 
             tileColor.append(S.clickedColor)  # Repeated to get a 2:1 weighted average
             tileColor.append(S.clickedColor)
 
-        tileColor = np.clip(((np.mean(np.array(tileColor) ** 2.2, axis=0)) ** (1 / 2.2)), 0, 255)  # Gamma-correcting color average
+        gammaFactor = 0.1
+        tileColor = np.clip(((np.mean(np.array(tileColor) ** gammaFactor, axis=0)) ** (1 / gammaFactor)), 0, 255)  # Gamma-correcting color average
 
         pygame.draw.rect(window, tileColor, pygame.Rect(*tilePos, S.tileSize, S.tileSize))
 
