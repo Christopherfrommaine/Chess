@@ -113,6 +113,7 @@ class Human(Player):
         else:
             if (self.s == 'w' and self.game.G.board[mi].isupper()) or (self.s == 'b' and self.game.G.board[mi].islower()):
                 self.selected = None
+                self.displaySettings.highlightedTiles = [moveToTuple(m)[1] for m in self.selectedLegalMoves if moveToTuple(m)[0] == self.selected]
             else:
                 self.bestMove = moveFromTuple((self.selected, mi))
                 self.selected = None

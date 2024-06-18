@@ -13,6 +13,14 @@ class Move:
     def __hash__(self):
         return hash(moveToTuple(self))
 
+    def __repr__(self):
+        def algebraicNotation(n):
+            coords = (n % 8, n // 8)
+            alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+            return alphabet[coords[0]] + str(7 - coords[1])
+
+        return algebraicNotation(self.begin) + algebraicNotation(self.end)
+
     def __eq__(self, other):
         if isinstance(other, Move):
             return moveToTuple(self) == moveToTuple(other)
@@ -218,14 +226,17 @@ def generateLegalMoves(G, checkCheck=True):
     if checkCheck:
         noncheckingMoves = []
         for m in legalMoves:
+            isInCheck = False
             Gcopy = G.copy()
             m.applyToGameState(Gcopy)
 
             respondingMoves = generateLegalMoves(Gcopy, checkCheck=False)
 
             for rm in respondingMoves:
-                if not G.board[rm.end].lower() == 'k':  # b is currently in a transformed state, so use G.board instead
-                    noncheckingMoves.append(m)
+                if G.board[rm.end].lower() == 'k':  # b is currently in a transformed state, so use G.board instead
+                    isInCheck = True
+            if not isInCheck:
+                noncheckingMoves.append(m)
 
         legalMoves = noncheckingMoves
 

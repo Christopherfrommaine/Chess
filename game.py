@@ -55,8 +55,10 @@ class Game:
         endSearchTime = time()
         self.moveGenerationThread.join()
 
-        if self.P.doDisplay:
-            self.P.displaySettings.highlightedTiles = []
+        if self.Pw.doDisplay:
+            self.Pw.displaySettings.highlightedTiles = []
+        if self.Pb.doDisplay:
+            self.Pb.displaySettings.highlightedTiles = []
 
         self.timeRemaining[self.G.turn.i] = originalTimeRemaining - (endSearchTime - startSearchTime) + self.timeAdded[self.G.turn.i]
 
@@ -98,3 +100,16 @@ class GameState:
     def boardAsList(self):
         return [s for s in self.board]
 
+
+    # Helper functions for Bots
+    def value(self, side):
+        peiceToValue = {'P': 1, 'N': 3, 'B': 3, 'R': 5, 'Q': 11}
+        return sum([peiceToValue[p.upper()] for p in self.board if (p.isupper() if side == 'w' else p.islower())])
+
+    def bitboard(self, peiceType):
+        o = 0
+        for i in range(64):
+            o <<= 1
+            if self.board[i] == peiceType:
+                o += 1
+        return o
