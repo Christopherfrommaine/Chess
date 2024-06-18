@@ -2,7 +2,7 @@ from display import DisplaySettings, draw
 import pygame
 import threading
 from random import randint
-from move import Move, moveFromTuple
+from move import Move, moveFromTuple, generateLegalMoves
 import time
 import numpy as np
 
@@ -27,7 +27,7 @@ class Player:
         self.opponent = self.game.Pb if self.s == 'w' else self.game.Pw
 
         if self.doDisplay:
-            self.displaySettings.displaySide = self.s.copy()
+            self.displaySettings.displaySide = self.s
             self.displaySettings.displaySurface = pygame.display.set_mode(self.displaySettings.windowSize)
 
     def updateDisplay(self):
@@ -60,6 +60,7 @@ class Human(Player):
     def __init__(self, displaySettings=DisplaySettings()):
         Player.__init__(self, doDisplay=True, displaySettings=displaySettings)
         self.selected = None
+        self.selectedLegalMoves = None
 
     def handlePygameEvents(self):
         newEvents = pygame.event.get()
@@ -68,7 +69,7 @@ class Human(Player):
                 self.game.running = False
 
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
+                if event.key == pygame.K_ESCAPE or event.key == pygame.K_F2:
                     self.game.running = False
                 if event.key == pygame.K_RETURN:
                     self.displaySettings.displaySide = -self.displaySettings.displaySide
@@ -105,17 +106,22 @@ class Human(Player):
 
         mi = int(mcoords.dot((1, 8)))
 
+        previousSelected = self.selected
         if self.selected is None:
-            if (self.game.G.board[mi].isupper()) if self.s == 'w' else (self.game.G.board[mi].islower()):
+            if (self.s == 'w' and self.game.G.board[mi].isupper()) or (self.s == 'b' and self.game.G.board[mi].islower()):
                 self.selected = mi
             else:
                 self.selected = None
         else:
-            if self.selected == mi:
+            if (self.s == 'w' and self.game.G.board[mi].islower()) or (self.s == 'b' and self.game.G.board[mi].isupper()):
                 self.selected = None
             else:
                 self.bestMove = moveFromTuple((self.selected, mi))
                 self.selected = None
+
+        if self.selected is not None and self.selected != previousSelected:
+            self.selectedLegalMoves = generateLegalMoves(self.game.G)
+            self.displaySettings.highlightedTiles = [m[1] for m in self.selectedLegalMoves if m[0] == self.selected]
 
     def generateMove(self):
         pass  # Not needed. Move generation is done through interacting with the board.

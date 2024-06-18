@@ -1,10 +1,8 @@
 import threading
+from time import time
 
-from player import Player
 from side import Side
-from copy import copy
-import time
-from move import Move
+# from move import Move
 
 
 class Game:
@@ -12,28 +10,27 @@ class Game:
         self.Pw = lightPlayer
         self.Pb = darkPlayer
 
-        self.Pw.initGame(self, Side('w'))
-        self.Pb.initGame(self, Side('G'))
-
-        self.G = GameState(self.Pw, self.Pb)
-
         self.timeRemaining = list(timeRemaining)
         self.timeAdded = list(timeAdded)
 
-        self.running = True
+        self.G = GameState()
 
+        self.running = True
         self.moveGenerationThread = None
+
+        self.Pw.initGame(self, Side('w'))
+        self.Pb.initGame(self, Side('b'))
 
     def run(self):
         try:
             while self.running:
                 self.update()
+        except KeyboardInterrupt:
+            self.stopAllThreads()
+            exit()
         except Exception as e:
             self.stopAllThreads()
             raise e
-        except:
-            self.stopAllThreads()
-            exit()
 
     def stopAllThreads(self):
         self.moveGenerationThread.join()
@@ -45,22 +42,22 @@ class Game:
         originalTimeRemaining = self.timeRemaining[self.G.turn.i]
 
         # Starting move generation, while being timed
-        startSearchTime = time.time()
+        startSearchTime = time()
         self.moveGenerationThread.start()
 
         # Updating display and time remaining
         while self.P.bestMove is None:
             self.Pw.updateDisplay()
             self.Pb.updateDisplay()
-            self.timeRemaining[self.G.turn.i] = originalTimeRemaining - (time.time() - startSearchTime)
+            self.timeRemaining[self.G.turn.i] = originalTimeRemaining - (time() - startSearchTime)
 
         nextMove = self.P.bestMove
-        endSearchTime = time.time()
+        endSearchTime = time()
         self.moveGenerationThread.join()
 
         self.timeRemaining[self.G.turn.i] = originalTimeRemaining - (endSearchTime - startSearchTime) + self.timeAdded[self.G.turn.i]
 
-        assert isinstance(nextMove, Move)
+        # assert isinstance(nextMove, Move)
         nextMove.applyToGameState(self.G)
 
     @property
@@ -72,19 +69,27 @@ class Game:
 class GameState:
     """An encaptulation of the current game state, to be used for move exploration."""
 
-    def __init__(self, lightPlayer, darkPlayer):
-        self.Pw = lightPlayer
-        self.Pb = darkPlayer
-
+    def __init__(self):
         # Current Game State
         self.board = 'rnbqkbnrpppppppp                                PPPPPPPPRNBQKBNR'
         self.canCastle = {'K', 'Q', 'k', 'q'}
         self.turn = Side('w')
 
         # Game History
-        self.winInformation = None
         self.boardHistory = [self.board]
         self.moveList = []
+
+    def copy(self):
+        o = GameState()
+
+        o.board = self.board  # strings are immutable
+        o.canCastle = self.canCastle.copy()
+        o.turn = self.turn
+
+        o.boardHistory = self.boardHistory.copy()
+        o.moveList = self.moveList.copy()
+
+        return o
 
     @property
     def boardAsList(self):
