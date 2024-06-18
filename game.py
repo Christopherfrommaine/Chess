@@ -2,7 +2,7 @@ import threading
 from time import time
 
 from side import Side
-# from move import Move
+from move import Move
 
 
 class Game:
@@ -55,9 +55,12 @@ class Game:
         endSearchTime = time()
         self.moveGenerationThread.join()
 
+        if self.P.doDisplay:
+            self.P.displaySettings.highlightedTiles = []
+
         self.timeRemaining[self.G.turn.i] = originalTimeRemaining - (endSearchTime - startSearchTime) + self.timeAdded[self.G.turn.i]
 
-        # assert isinstance(nextMove, Move)
+        assert isinstance(nextMove, Move)
         nextMove.applyToGameState(self.G)
 
     @property

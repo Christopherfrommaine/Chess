@@ -1,8 +1,7 @@
 from display import DisplaySettings, draw
 import pygame
-import threading
 from random import randint
-from move import Move, moveFromTuple, generateLegalMoves
+from move import moveFromTuple, generateLegalMoves, moveToTuple
 import time
 import numpy as np
 
@@ -48,7 +47,8 @@ class Player:
 
     def generateMove(self):  # To be overwritten by subclasses
         time.sleep(1 + self.s.i)
-        self.bestMove = Move(randint(0, 63), randint(0, 63))
+        allMoves = generateLegalMoves(self.game.G)
+        self.bestMove = allMoves[randint(0, len(allMoves) - 1)]
 
 
 class Bot(Player):
@@ -110,10 +110,8 @@ class Human(Player):
         if self.selected is None:
             if (self.s == 'w' and self.game.G.board[mi].isupper()) or (self.s == 'b' and self.game.G.board[mi].islower()):
                 self.selected = mi
-            else:
-                self.selected = None
         else:
-            if (self.s == 'w' and self.game.G.board[mi].islower()) or (self.s == 'b' and self.game.G.board[mi].isupper()):
+            if (self.s == 'w' and self.game.G.board[mi].isupper()) or (self.s == 'b' and self.game.G.board[mi].islower()):
                 self.selected = None
             else:
                 self.bestMove = moveFromTuple((self.selected, mi))
@@ -121,7 +119,7 @@ class Human(Player):
 
         if self.selected is not None and self.selected != previousSelected:
             self.selectedLegalMoves = generateLegalMoves(self.game.G)
-            self.displaySettings.highlightedTiles = [m[1] for m in self.selectedLegalMoves if m[0] == self.selected]
+            self.displaySettings.highlightedTiles = [moveToTuple(m)[1] for m in self.selectedLegalMoves if moveToTuple(m)[0] == self.selected]
 
     def generateMove(self):
         pass  # Not needed. Move generation is done through interacting with the board.

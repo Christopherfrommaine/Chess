@@ -14,7 +14,9 @@ class Move:
         return hash(moveToTuple(self))
 
     def __eq__(self, other):
-        return moveToTuple(self) == moveFromTuple(other)
+        if isinstance(other, Move):
+            return moveToTuple(self) == moveToTuple(other)
+        return self == moveFromTuple(other)
 
     def applyToGameState(self, G):
         b = G.boardAsList
@@ -116,7 +118,7 @@ def rotateFlipAndExtend(tup, coords, b):
 def vFlipI(i):
     return i % 8 + 8 * (7 - (i // 8))
 
-def generateLegalMoves(G, overrideCheck=False):
+def generateLegalMoves(G, checkCheck=True):
     # G is a GameState
     global e
     s = G.turn
@@ -202,32 +204,29 @@ def generateLegalMoves(G, overrideCheck=False):
                             shiftI(2, 0)
                             legalMoves.append((i, e))
 
-            if sum([1 for m in legalMoves if m[0] < 0]):
-                print(i)
+    # Remove None-valued moves
+    legalMoves = [m for m in legalMoves if m[1] is not None]
 
-    print(1, legalMoves)
-
-    if overrideCheck:
-        o = [m for m in legalMoves if m[1] is not None]
-    else:
-        o = []
-        for m in legalMoves:
-            if m[1] is not None:
-                Gcopy = G.copy()
-                moveFromTuple(m).applyToGameState(Gcopy)
-                respondingMoves = generateLegalMoves(Gcopy, overrideCheck=True)
-                for rm in respondingMoves:
-                    if not rm[1] == ('K' if G.board[m[0]].isupper() else 'k'):
-                        o.append(m)
-
-    print(2, o)
-
-
+    # Undoing Board Transformations
     if s == 'w':
-        o2 = [(vFlipI(m[0]), vFlipI(m[1])) for m in o]
-    else:
-        o2 = o
+        legalMoves = [(vFlipI(m[0]), vFlipI(m[1])) for m in legalMoves]
 
-    print(3, o2)
+    # Converting to Move objects
+    legalMoves = [moveFromTuple(m) for m in legalMoves]
 
-    return o2
+    # Checking for Inability to move due to check
+    if checkCheck:
+        noncheckingMoves = []
+        for m in legalMoves:
+            Gcopy = G.copy()
+            m.applyToGameState(Gcopy)
+
+            respondingMoves = generateLegalMoves(Gcopy, checkCheck=False)
+
+            for rm in respondingMoves:
+                if not G.board[rm.end].lower() == 'k':  # b is currently in a transformed state, so use G.board instead
+                    noncheckingMoves.append(m)
+
+        legalMoves = noncheckingMoves
+
+    return legalMoves
