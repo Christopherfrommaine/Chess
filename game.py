@@ -2,7 +2,8 @@ import threading
 from time import time
 
 from side import Side
-from move import Move
+from move import Move, generateLegalMoves
+
 
 
 class Game:
@@ -21,16 +22,19 @@ class Game:
         self.Pw.initGame(self, Side('w'))
         self.Pb.initGame(self, Side('b'))
 
+        self.winner = None
+
     def run(self):
         try:
-            while self.running:
+            while self.running and not self.winner:
                 self.update()
         except KeyboardInterrupt:
             self.stopAllThreads()
-            exit()
+            self.running = False
         except Exception as e:
             self.stopAllThreads()
             raise e
+
 
     def stopAllThreads(self):
         self.moveGenerationThread.join()
@@ -55,15 +59,47 @@ class Game:
         endSearchTime = time()
         self.moveGenerationThread.join()
 
-        if self.Pw.doDisplay:
-            self.Pw.displaySettings.highlightedTiles = []
-        if self.Pb.doDisplay:
-            self.Pb.displaySettings.highlightedTiles = []
-
         self.timeRemaining[self.G.turn.i] = originalTimeRemaining - (endSearchTime - startSearchTime) + self.timeAdded[self.G.turn.i]
 
         assert isinstance(nextMove, Move)
-        nextMove.applyToGameState(self.G)
+        self.applyMove(nextMove)
+
+    def applyMove(self, m):
+        m.applyToGameState(self.G)
+
+        # Stalemate / Checkmate Check
+        if not generateLegalMoves(self.G):
+            isCheckmate = False
+            Gnew = self.G.copy()
+            Gnew.turn = -Gnew.turn
+            newLegalMoves = generateLegalMoves(Gnew, False)
+            for m in newLegalMoves:
+                if Gnew.board[m.end].lower() == 'k':
+                    isCheckmate = True
+                    break
+
+            if isCheckmate:
+                self.win(self.G.turn)
+            else:
+                # Stalemate Check
+                self.win(None)
+
+        # Draw by Repitition check
+        repeatedBoardStateCount = 0
+        for b in self.G.boardHistory:
+            if self.G.board == b:
+                repeatedBoardStateCount += 1
+        if repeatedBoardStateCount > 3:
+            self.win(None)
+
+    def win(self, result):
+        print(f'Yippie!! {result} won!')
+        self.winner = result
+
+        while self.running:
+            self.Pw.updateDisplay()
+            self.Pb.updateDisplay()
+
 
     @property
     def P(self):
@@ -96,15 +132,26 @@ class GameState:
 
         return o
 
+    def withMoveApplied(self, m):
+        Gcopy = self.copy()
+        m.applyToGameState(Gcopy)
+        return Gcopy
+
     @property
     def boardAsList(self):
         return [s for s in self.board]
 
 
     # Helper functions for Bots
-    def value(self, side):
-        peiceToValue = {'P': 1, 'N': 3, 'B': 3, 'R': 5, 'Q': 11}
-        return sum([peiceToValue[p.upper()] for p in self.board if (p.isupper() if side == 'w' else p.islower())])
+    def sideValue(self, side):
+        peiceToValue = {'P': 1, 'N': 3, 'B': 3, 'R': 5, 'Q': 11, 'K': 0}
+        return sum([peiceToValue[p.upper()] for p in self.board if (p.isupper() if side == 'w' else p.islower())]) + (float('-inf') if ('K' if side == 'w' else 'k') not in self.board else 0)
+
+    def value(self):
+        return self.sideValue('w') - self.sideValue('b')
+
+    def isOver(self):
+        return not ('k' in self.board and 'K' in self.board)
 
     def bitboard(self, peiceType):
         o = 0

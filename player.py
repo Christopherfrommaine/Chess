@@ -52,9 +52,9 @@ class Player:
 
 
 class Bot(Player):
-    def __init__(self, maxDepth=3, doDisplay=False, displaySettings=DisplaySettings()):
+    def __init__(self, doDisplay=False, displaySettings=DisplaySettings()):
         Player.__init__(self, doDisplay=doDisplay, displaySettings=displaySettings)
-        self.maxDepth = maxDepth
+
 
 class Human(Player):
     def __init__(self, displaySettings=DisplaySettings()):
@@ -105,22 +105,18 @@ class Human(Player):
             mcoords[0] = 7 - mcoords[0]
 
         mi = int(mcoords.dot((1, 8)))
+        
+        if self.selected is not None and mi in self.displaySettings.highlightedTiles:
+            self.bestMove = moveFromTuple((self.selected, mi))
 
-        previousSelected = self.selected
-        if self.selected is None:
-            if (self.s == 'w' and self.game.G.board[mi].isupper()) or (self.s == 'b' and self.game.G.board[mi].islower()):
-                self.selected = mi
-        else:
-            if (self.s == 'w' and self.game.G.board[mi].isupper()) or (self.s == 'b' and self.game.G.board[mi].islower()):
-                self.selected = None
-                self.displaySettings.highlightedTiles = [moveToTuple(m)[1] for m in self.selectedLegalMoves if moveToTuple(m)[0] == self.selected]
-            else:
-                self.bestMove = moveFromTuple((self.selected, mi))
-                self.selected = None
+        self.displaySettings.highlightedTiles = []
 
-        if self.selected is not None and self.selected != previousSelected:
-            self.selectedLegalMoves = generateLegalMoves(self.game.G)
-            self.displaySettings.highlightedTiles = [moveToTuple(m)[1] for m in self.selectedLegalMoves if moveToTuple(m)[0] == self.selected]
+        self.selected = mi if (self.s == 'w' and self.game.G.board[mi].isupper()) or (self.s == 'b' and self.game.G.board[mi].islower()) else None
+
+        if self.bestMove is None:
+            self.displaySettings.highlightedTiles = [moveToTuple(m)[1] for m in generateLegalMoves(self.game.G) if moveToTuple(m)[0] == self.selected]
 
     def generateMove(self):
-        pass  # Not needed. Move generation is done through interacting with the board.
+        # Move generation is done through interacting with the board.
+        self.bestMove = None
+        self.displaySettings.highlightedTiles = []

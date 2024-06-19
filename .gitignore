@@ -3,4 +3,4 @@
 /__pycache__/
 /other/
 testing.py
-debugging.py
+other/debugging.py

@@ -17,7 +17,7 @@ class Move:
         def algebraicNotation(n):
             coords = (n % 8, n // 8)
             alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
-            return alphabet[coords[0]] + str(7 - coords[1])
+            return alphabet[coords[0]] + str(8 - coords[1])
 
         return algebraicNotation(self.begin) + algebraicNotation(self.end)
 
@@ -227,13 +227,12 @@ def generateLegalMoves(G, checkCheck=True):
         noncheckingMoves = []
         for m in legalMoves:
             isInCheck = False
-            Gcopy = G.copy()
-            m.applyToGameState(Gcopy)
+            Gcopy = G.withMoveApplied(m)
 
             respondingMoves = generateLegalMoves(Gcopy, checkCheck=False)
 
             for rm in respondingMoves:
-                if G.board[rm.end].lower() == 'k':  # b is currently in a transformed state, so use G.board instead
+                if Gcopy.board[rm.end].lower() == 'k':  # b is currently in a transformed state, so use G.board instead
                     isInCheck = True
             if not isInCheck:
                 noncheckingMoves.append(m)
