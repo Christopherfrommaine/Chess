@@ -1,5 +1,7 @@
 import threading
+
 from time import time
+from random import choice
 
 from side import Side
 from move import Move, generateLegalMoves
@@ -50,12 +52,17 @@ class Game:
         self.moveGenerationThread.start()
 
         # Updating display and time remaining
-        while self.P.bestMove is None:
+        while self.P.bestMove is None and self.moveGenerationThread.is_alive():
             self.Pw.updateDisplay()
             self.Pb.updateDisplay()
             self.timeRemaining[self.G.turn.i] = originalTimeRemaining - (time() - startSearchTime)
 
         nextMove = self.P.bestMove
+
+        if nextMove is None:
+            print(f'{self.P.s} did not make a move. Generating random move.')
+            nextMove = choice(generateLegalMoves(self.G, False))
+
         endSearchTime = time()
         self.moveGenerationThread.join()
 
@@ -79,7 +86,7 @@ class Game:
                     break
 
             if isCheckmate:
-                self.win(self.G.turn)
+                self.win(-self.G.turn)
             else:
                 # Stalemate Check
                 self.win(None)
@@ -145,7 +152,7 @@ class GameState:
     # Helper functions for Bots
     def sideValue(self, side):
         peiceToValue = {'P': 1, 'N': 3, 'B': 3, 'R': 5, 'Q': 11, 'K': 0}
-        return sum([peiceToValue[p.upper()] for p in self.board if (p.isupper() if side == 'w' else p.islower())]) + (float('-inf') if ('K' if side == 'w' else 'k') not in self.board else 0)
+        return sum([peiceToValue[p.upper()] for p in self.board if (p.isupper() if side == 'w' else p.islower())]) + ((2 ** 15) if ('K' if side == 'w' else 'k') not in self.board else 0)
 
     def value(self):
         return self.sideValue('w') - self.sideValue('b')

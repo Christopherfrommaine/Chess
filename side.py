@@ -25,9 +25,7 @@ class Side:
 
 def sideIntFrom(x):
     """Converts from any black and white format to int"""
-    # Convert to int representation
-    if x is None:
-        return None
+
     if isinstance(x, str):
         if x == 'w':
             return 1
