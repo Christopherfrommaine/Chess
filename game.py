@@ -13,8 +13,8 @@ class Game:
         self.Pw = lightPlayer
         self.Pb = darkPlayer
 
-        self.timeRemaining = list(timeRemaining)
-        self.timeAdded = list(timeAdded)
+        self.timeRemaining = list(timeRemaining) if hasattr(timeRemaining, "__iter__") else [timeRemaining] * 2
+        self.timeAdded = list(timeAdded) if hasattr(timeAdded, "__iter__") else [timeAdded] * 2
 
         self.G = GameState()
 

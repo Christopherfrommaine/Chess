@@ -133,4 +133,4 @@ def formatAsTime(seconds):
     hrs, mins, secs = seconds // 3600, (seconds // 60) % 60, seconds % 60 // 1
 
     # Here also could be changed to a 1, if you want:        \|/
-    return (f'{hrs:01.0f}:{mins:02.0f}:' if hrs else f'{mins:02.0f}:') + (f'{secs:02.0f}' if mins else f'{secs:06.3f}')
+    return (f'{hrs:01.0f}:{mins:02.0f}:' if hrs else f'{mins:02.0f}:') + (f'{secs:02.0f}' if (mins or hrs) else f'{secs:06.3f}')
